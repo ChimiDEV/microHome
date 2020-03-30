@@ -21,7 +21,6 @@ const logger = winston.createLogger({
           format: winston.format.combine(
             format.colorize(),
             format.timestamp(),
-            format.align(),
             format.printf(
               ({ service = 'NOT SET', timestamp, level, message, ...rest }) =>
                 `${timestamp} [\u001B[36m${service}\u001B[0m | ${level}]: ${message}${
