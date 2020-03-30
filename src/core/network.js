@@ -1,6 +1,7 @@
 import net from 'net';
 import { networkInterfaces } from 'os';
 import { flatten } from 'lodash';
+import { parseMicroHomeMessage } from './protocol';
 
 export const getLocalIp = port =>
   networkInterfaces()
@@ -23,5 +24,7 @@ export const sendPackage = (dataPackage, ipv4Address, port = 5100) =>
       if (err) reject(err);
     });
 
-    socket.on('data', response => socket.end(() => resolve(response)));
+    socket.on('data', response =>
+      socket.end(() => resolve(parseMicroHomeMessage(response))),
+    );
   });
