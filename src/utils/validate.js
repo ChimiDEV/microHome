@@ -8,7 +8,7 @@ export const isJson = str => {
   }
 };
 
-const requiredProps = ['version', 'source', 'id', 'timestamp', 'type'];
+const requiredProps = ['source', 'id', 'timestamp', 'type'];
 export const isMicroHomeEvent = object =>
   // Check if object has all required Properties
   requiredProps.map(required => object[required]).filter(Boolean).length ===
