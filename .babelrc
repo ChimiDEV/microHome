@@ -15,6 +15,7 @@
       }
     ]
   ],
+  "sourceMaps": "both",
 
   // Optional Plugins -> Proposals. Property does have to be used. Plugins have to be installed via npm.
   "plugins": [
