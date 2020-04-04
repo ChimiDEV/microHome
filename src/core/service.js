@@ -5,6 +5,7 @@
  */
 import net from 'net';
 import { EventEmitter } from 'events';
+import to from 'await-to-js';
 import {
   parseMicroHomeMessage,
   microHomeMessage,
@@ -12,7 +13,7 @@ import {
   LATEST_VERSION,
 } from './protocol';
 import log from '../utils/logger';
-import { getLocalIp } from './network';
+import { getLocalIp, sendPackage } from './network';
 
 const defaultLogger = log.child({ service: 'µHomeBaseService' });
 
@@ -82,7 +83,55 @@ export const initBaseService = (
   };
 };
 
-export const initService = () => {};
+export const initService = async (
+  nodeId,
+  {
+    port = 5102,
+    eventBrokerAddress,
+    serviceRegistryAddress,
+    version = LATEST_VERSION,
+  } = {},
+) => {
+  if (!eventBrokerAddress) {
+    throw new Error(
+      "Service can only be instantiated with 'Event Broker' Address",
+    );
+  }
+
+  if (!serviceRegistryAddress) {
+    throw new Error(
+      "Service can only be instantiated with 'Service Registry' Address",
+    );
+  }
+
+  const serviceLogger = log.child({ service: nodeId });
+  const baseService = initBaseService(port, nodeId, serviceLogger, version);
+
+  // Microservice Registers to Service Registry
+  const [err] = await to(
+    sendPackage(
+      microHomeMessage(
+        createPayload({
+          source: nodeId,
+          type: 'µHome.register',
+          data: { nodeId, address: getLocalIp(port) },
+        }),
+      ),
+      serviceRegistryAddress,
+    ),
+  );
+
+  if (err) {
+    serviceLogger.error(`Failed to register microservice '${nodeId}'`);
+    baseService.server.close();
+    throw err;
+  }
+
+  return {
+    ...baseService,
+    nodeId,
+  };
+};
 
 const responseObject = (service, socket) => ({
   send: (data = {}) => {
@@ -94,6 +143,20 @@ const responseObject = (service, socket) => ({
           data: typeof data === 'string' ? { message: data } : data,
         }),
         1,
+        service.version,
+        service.logger,
+      ),
+    );
+  },
+  error: (err, status = 0) => {
+    socket.write(
+      microHomeMessage(
+        createPayload({
+          source: service.source,
+          type: 'µHome.error',
+          error: typeof err === 'string' ? { message: err } : err,
+        }),
+        status,
         service.version,
         service.logger,
       ),

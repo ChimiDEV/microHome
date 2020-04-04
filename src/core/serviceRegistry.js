@@ -18,6 +18,8 @@ export const initServiceRegistry = ({
     'µHome/core/serviceRegistry',
     registryLogger,
   );
+  const registry = new DataStore();
+
   registryLogger.info(`Booted Node on ${getLocalIp(port)}`);
 
   addEventHandler(service, 'µHome.register', (payload, res) => {
@@ -27,6 +29,6 @@ export const initServiceRegistry = ({
 
   return {
     ...service,
-    registry: new DataStore(),
+    registry,
   };
 };

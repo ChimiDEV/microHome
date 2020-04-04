@@ -1,22 +1,21 @@
-import logger from './utils/logger';
+import to from 'await-to-js';
 import { initService } from './core/service';
-import { sendPackage, getLocalIp } from './core/network';
-import { microHomeMessage, createPayload } from './core/protocol';
+import { getLocalIp } from './core/network';
 
 const nodeId = 'µHome/dummyService';
 
-initService(5102, nodeId, logger.child({ service: 'Dummy Service' }));
-
 (async () => {
-  const res = await sendPackage(
-    microHomeMessage(
-      createPayload({
-        source: nodeId,
-        type: 'µHome.register',
-        data: { nodeId, address: getLocalIp(5102) },
-      }),
-    ),
-    getLocalIp(5101),
+  const [err, dummyService] = await to(
+    initService(nodeId, {
+      eventBrokerAddress: getLocalIp(5100),
+      serviceRegistryAddress: getLocalIp(5101),
+    }),
   );
-  console.log(res);
+
+  if (err) {
+    console.log(err);
+  }
+
+  // console.log(dummyService);
+  dummyService.server.close(); // Later should have a .close / .end Method, which will unregister the service as well
 })();

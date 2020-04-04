@@ -25,6 +25,9 @@ export const sendPackage = (dataPackage, ipv4Address, port = 5100) =>
     });
 
     socket.on('data', response =>
-      socket.end(() => resolve(parseMicroHomeMessage(response))),
+      (parsedRes =>
+        socket.end(() =>
+          parsedRes.status === 1 ? resolve(parsedRes) : reject(parsedRes),
+        ))(parseMicroHomeMessage(response)),
     );
   });
