@@ -4,20 +4,19 @@
 
 import logger from '../utils/logger';
 import { getLocalIp, sendPackage } from './network';
-import { initTcpServer } from './service';
+import { initBaseService } from './service';
 
-const brokerLogger = logger.child({ service: 'Event Broker' });
+const brokerLogger = logger.child({ service: 'µHomeEventBroker' });
 
 // eslint-disable-next-line import/prefer-default-export
-export const initEventBroker = (port = 5100) => {
+export const initEventBroker = ({ port = 5100 } = {}) => {
   // EventBroker has to maintain a list of nodes to broadcast (and accept) events to | THIS WILL BE DONE BY THE REGISTRY
-  const server = initTcpServer(port, 'µHome/core/eventBroker');
-  brokerLogger.info(`Initializing Event Broker at ${getLocalIp(port)}`);
+  const service = initBaseService(port, 'µHome/core/eventBroker', brokerLogger);
+  brokerLogger.info(`Booted Node on ${getLocalIp(port)}`);
 
   return {
+    ...service,
     activeNodes: [{ port: 5101, address: getLocalIp() }],
-    server,
-    ip: getLocalIp(port),
   };
 };
 

@@ -4,6 +4,7 @@
  * Receiving any message it will try to parse it as defined by the µHome protocol
  */
 import net from 'net';
+import { EventEmitter } from 'events';
 import {
   parseMicroHomeMessage,
   microHomeMessage,
@@ -11,57 +12,96 @@ import {
   LATEST_VERSION,
 } from './protocol';
 import log from '../utils/logger';
+import { getLocalIp } from './network';
 
 const defaultLogger = log.child({ service: 'µHomeBaseService' });
 
-const defaultListeners = [
-  {
-    event: 'data',
-    handler: (socket, source, version, logger) => dataBuffer => {
-      try {
-        const { status, payload } = parseMicroHomeMessage(dataBuffer);
-        logger.info('Received Data', { status, payload });
-        if (status !== 1) {
-          throw new Error('Error in Message');
-        }
+export const initBaseService = (
+  port = 5100,
+  source,
+  logger = defaultLogger,
+  version = LATEST_VERSION,
+) => {
+  const internalEventBroker = new EventEmitter();
 
-        // Do Something with Data
+  const serviceEmitter = socket => dataBuffer => {
+    try {
+      const { status, payload } = parseMicroHomeMessage(dataBuffer);
+      logger.debug(`Received Event '${payload.type}' with data`, {
+        ...payload,
+      });
 
-        socket.write(
+      if (status !== 1) {
+        throw new Error('Error in Message');
+      }
+
+      if (!internalEventBroker.listenerCount(payload.type)) {
+        return socket.write(
           microHomeMessage(
-            createPayload({ source, type: 'µHome.response' }),
+            createPayload({
+              source,
+              type: 'µHome.response',
+              data: {
+                message: 'No Handler for Event registered',
+              },
+            }),
             1,
             version,
             logger,
           ),
         );
-      } catch (err) {
-        socket.write(
-          microHomeMessage(
-            createPayload({ source, type: 'µHome.error', error: err.message }),
-            2,
-            version,
-            logger,
-          ),
-        );
       }
-    },
-  },
-];
 
-// eslint-disable-next-line import/prefer-default-export
-export const initTcpServer = (
-  port = 5100,
-  source,
-  logger = defaultLogger,
-  dataListeners = defaultListeners,
-  version = LATEST_VERSION,
-) => {
-  const server = net.createServer(s => {
-    dataListeners.forEach(({ event, handler }) => {
-      s.on(event, handler(s, source, version, logger));
-    });
-  });
-  server.listen(port);
-  return server;
+      return internalEventBroker.emit(payload.type, socket, payload);
+    } catch (err) {
+      return socket.write(
+        microHomeMessage(
+          createPayload({
+            source,
+            type: 'µHome.error',
+            error: err.message,
+          }),
+          2,
+          version,
+          logger,
+        ),
+      );
+    }
+  };
+
+  return {
+    version,
+    source,
+    address: getLocalIp(port),
+    logger,
+    server: net
+      .createServer(socket => socket.on('data', serviceEmitter(socket)))
+      .listen(port),
+    internalEventBroker,
+    emit: () => {}, // Will emit event to broker
+  };
 };
+
+export const initService = () => {};
+
+const responseObject = (service, socket) => ({
+  send: (data = {}) => {
+    socket.write(
+      microHomeMessage(
+        createPayload({
+          source: service.source,
+          type: 'µHome.response',
+          data: typeof data === 'string' ? { message: data } : data,
+        }),
+        1,
+        service.version,
+        service.logger,
+      ),
+    );
+  },
+});
+
+export const addEventHandler = (service, event, handler) =>
+  service.internalEventBroker.on(event, (socket, payload) =>
+    handler(payload, responseObject(service, socket)),
+  );
