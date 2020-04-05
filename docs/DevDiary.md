@@ -6,9 +6,10 @@
 
 As previously stated in the README, this whole project is to be observed as learning process.
 I **do not expect** to create a newly full-framed 'Microservice Tooling'.
-There are thousand other more sophisticated alternatives, e.g. [Moleculer] or workin with [Kubernetes] and [Istio].
+There are thousand other more sophisticated alternatives, e.g. [Moleculer] or working with [Kubernetes] and [Istio].
 Therefore _of course_ I'll try to develop most parts from scratch.
 **Like literally.**
+
 Even the communication between the nodes ain't a standardized protocol.
 Yes, I'm not using HTTP, [NATS], [MQTT](http://mqtt.org/) or whatsoever.
 The nodes will be bare TCP server.
@@ -24,7 +25,7 @@ I'll have to develop a way to [send packages] between nodes, i.e. build up a con
 **Second: No standardized protocol.**
 That means, I'll have to create my own protocol which represents the standard communication structure of a package.
 I solved this by [defining a simple protocol], based on a HEADER and a PAYLOAD.
-The payload is (when parsed) a JSON object.
+The payload is (when parsed) a JSON object.\
 Also ignore the v2 comment of using CloudEvent.
 I removed that idea quite quickly.
 Yes I try to version the protocol functions.
@@ -35,8 +36,8 @@ With that defined, I had a way to develop reproducible ['services'](nodes) with 
 ### Event based communication
 
 It may not be quite obvious, but every node will have the ability to subscribe to events that will be published (or broadcast) inside the service mesh.
-Therefore I work alot with the [EventEmitter] class.
-Every `services` contains beside the named TCP server an internalEventEmitter.
+Therefore I work a lot with the [EventEmitter] class.
+Every `services` contains beside the named TCP server an internalEventEmitter.\
 My protocol per definition defines the `type` property, which describes what event the payload describes.
 When a package will be received by **any** node of the mesh it checks if it has a [subscribed event handler] for this type.
 If not it'll simply respond with a ['No event handler registered'] message.
@@ -56,8 +57,7 @@ Namely the [`Event Broker`] and [`Service Registry`].
 
 A service registry inside the 'µHome Service Mesh' is a node, that will keep the state of every active node inside the mesh.
 It will have a list of every node saved with a `nodeId` and it's local IPv4 address (plus port obviously).
-For some resilience I didn't use a simple javascript object, but a [in-memory database called nedb].
-
+For some resilience I didn't use a simple javascript object, but a [in-memory database called nedb].\
 Further below, I append a simple sequence diagram that describes the flow of a registration by any node inside the service mesh.
 
 ![Sequence Diagram: Registration](./images/0.0.1_RegisterSequence.png)
@@ -73,13 +73,13 @@ Further below, I append a simple sequence diagram that describes the flow of a r
 The event broker represents one of the most important nodes in a 'µHome Service Mesh'.
 It'll publish and broadcast events that are triggered by different sources.
 For example a microservice could publish a event while processing any other independent event, so that any other microservice could continue work on this event.
-Another way could be a type of interface (e.g. HTTP or MQTT) that triggers the event broker to kind of "forward" the incoming event.
-The first iteration I'll try to implement a REPL like tool, so that i can easy inject events into the mesh.
+Another way could be a type of interface (e.g. HTTP or MQTT) that triggers the event broker to kind of "forward" the incoming event.\
+In the first iteration I'll try to implement a REPL like tool, so that I can easily inject events into the mesh.
 This will greatly help debugging any node.
 
 ---
 
-## [0.0.1] The first working prototype
+## [[0.0.1]]: The first working prototype
 
 Today I achieved the first working iteration of the Core API.
 Using the [index.js], [dummyService.js] and [dummyService2.js] I'm able to create a mesh, that contains two services, a service registry and event broker.
