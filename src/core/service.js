@@ -14,8 +14,14 @@ import {
 } from './protocol';
 import log from '../utils/logger';
 import { getLocalIp, sendPackage } from './network';
+import responseObject from './response';
 
 const defaultLogger = log.child({ service: 'µHomeBaseService' });
+
+export const addEventHandler = (service, event, handler) =>
+  service.internalEventBroker.on(event, (socket, payload) =>
+    handler(payload, responseObject(service, socket)),
+  ) || service;
 
 export const initBaseService = (
   port = 5100,
@@ -83,6 +89,7 @@ export const initBaseService = (
   };
 };
 
+// Initiation of a microservice
 export const initService = async (
   nodeId,
   {
@@ -106,6 +113,11 @@ export const initService = async (
 
   const serviceLogger = log.child({ service: nodeId });
   const baseService = initBaseService(port, nodeId, serviceLogger, version);
+
+  // Add standard event handler
+  addEventHandler(baseService, 'µHome.healthcheck', (p, res) =>
+    res.send('Service is healthy'),
+  );
 
   // Microservice Registers to Service Registry
   const [err] = await to(
@@ -132,39 +144,3 @@ export const initService = async (
     nodeId,
   };
 };
-
-const responseObject = (service, socket) => ({
-  send: (data = {}) => {
-    socket.write(
-      microHomeMessage(
-        createPayload({
-          source: service.source,
-          type: 'µHome.response',
-          data: typeof data === 'string' ? { message: data } : data,
-        }),
-        1,
-        service.version,
-        service.logger,
-      ),
-    );
-  },
-  error: (err, status = 0) => {
-    socket.write(
-      microHomeMessage(
-        createPayload({
-          source: service.source,
-          type: 'µHome.error',
-          error: typeof err === 'string' ? { message: err } : err,
-        }),
-        status,
-        service.version,
-        service.logger,
-      ),
-    );
-  },
-});
-
-export const addEventHandler = (service, event, handler) =>
-  service.internalEventBroker.on(event, (socket, payload) =>
-    handler(payload, responseObject(service, socket)),
-  );

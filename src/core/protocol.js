@@ -64,7 +64,7 @@ export const microHomeMessageV2 = (payload, status, logger) => {
   }
 
   logger.debug('Creating Buffer with payload', {
-    payload: JSON.stringify(payload),
+    payload,
   });
   return createPackage(Buffer.from(JSON.stringify(payload)), 2, status);
 };

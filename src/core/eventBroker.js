@@ -4,9 +4,10 @@
 
 import logger from '../utils/logger';
 import { getLocalIp, sendPackage } from './network';
-import { initBaseService } from './service';
+import { initBaseService, addEventHandler } from './service';
 
 const brokerLogger = logger.child({ service: 'µHomeEventBroker' });
+let activeNodes = [];
 
 // eslint-disable-next-line import/prefer-default-export
 export const initEventBroker = ({ port = 5100 } = {}) => {
@@ -14,10 +15,16 @@ export const initEventBroker = ({ port = 5100 } = {}) => {
   const service = initBaseService(port, 'µHome/core/eventBroker', brokerLogger);
   brokerLogger.info(`Booted Node on ${getLocalIp(port)}`);
 
+  addEventHandler(service, 'µHome.nodes', (payload, res) => {});
+
   return {
     ...service,
-    activeNodes: [{ port: 5101, address: getLocalIp() }],
+    activeNodes: () => activeNodes,
   };
+};
+
+export const updateActiveNodes = newNodes => {
+  activeNodes = newNodes;
 };
 
 export const broadcastEvent = async (eventBroker, event) => {

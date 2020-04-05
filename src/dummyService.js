@@ -14,6 +14,7 @@ const nodeId = 'µHome/dummyService';
 
   if (err) {
     console.log(err);
+    return;
   }
 
   // console.log(dummyService);
