@@ -2,7 +2,7 @@
 
 Microservice Based Home Managing and Automation Service
 
-### Brainstorming
+## Brainstorming
 
 Surely there are tons of other ready-to-go microservices frameworks with already built-in service registries and what not.
 This project purely is for learning something new, while also implementing something of value for myself.
@@ -18,8 +18,4 @@ I'll start with an centralized event broker. But maybe one day I'll try and rest
 - https://pusher.com/tutorials/service-discovery-microservices
 - https://medium.com/codait/simple-service-registry-4550aee5a869
 
-### Todos
-
-- [ ] Implement a Service Registry
-- [ ] Implement a Service Discovery Possibility
-- [ ] Implement a Event broker
+For further information about the current state, you can check the ['Dev Diary'](./docs/DevDiary.md) I try to maintain.
