@@ -13,10 +13,13 @@ const nodeId = 'µHome/dummyService';
   );
 
   if (err) {
-    console.log(err);
     return;
   }
 
   // console.log(dummyService);
-  dummyService.server.close(); // Later should have a .close / .end Method, which will unregister the service as well
+  await dummyService.subscribe('local.test', (payload, res) =>
+    res.send('Received'),
+  );
+
+  // dummyService.server.close(); // Later should have a .close / .end Method, which will unregister the service as well
 })();

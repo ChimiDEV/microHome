@@ -1,10 +1,9 @@
 /*
  * This is currently the main function for booting up the core nodes of the micro service framework.
  */
-
-import { initEventBroker, updateActiveNodes } from './core/eventBroker';
+// import to from 'await-to-js';
+import { initEventBroker } from './core/eventBroker';
 import { initServiceRegistry } from './core/serviceRegistry';
-import { getLocalIp } from './core/network';
 
 (async () => {
   // ---- Testing "Service"
@@ -16,7 +15,7 @@ import { getLocalIp } from './core/network';
   // );
 
   const broker = initEventBroker();
-  initServiceRegistry({ eventBrokerAddress: getLocalIp(5100) });
+  initServiceRegistry({ eventBrokerAddress: broker.address });
   // const responses = await broadcastEvent(
   //   eventBroker,
   //   microHomeMessage(
@@ -35,4 +34,9 @@ import { getLocalIp } from './core/network';
 
   // microserviceServer.close();
   // eventBroker.server.close();
+
+  setInterval(
+    () => broker.broadcastEvent('local.test', { incoming: true }),
+    10000,
+  );
 })();

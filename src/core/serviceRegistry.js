@@ -6,7 +6,7 @@ import to from 'await-to-js';
 import { initBaseService, addEventHandler } from './service';
 import logger from '../utils/logger';
 import { getLocalIp, sendPackage } from './network';
-import { microHomeMessage, createPayload } from './protocol';
+import { microHomeMessage, createPayload, LATEST_VERSION } from './protocol';
 
 const registryLogger = logger.child({ service: 'µHomeServiceRegistry' });
 
@@ -34,30 +34,32 @@ const createRegistry = () => {
 // eslint-disable-next-line import/prefer-default-export
 export const initServiceRegistry = ({
   port = 5101,
+  version = LATEST_VERSION,
   eventBrokerAddress,
 } = {}) => {
   const service = initBaseService(
     port,
     'µHome/core/serviceRegistry',
     registryLogger,
+    version,
   );
   const { registry, insert, find } = createRegistry();
   registryLogger.info(`Booted Node on ${getLocalIp(port)}`);
 
   addEventHandler(
     service,
-    'µHome.register',
-    async ({ data: { nodeId, address } }, res) => {
+    'µHome.core.register',
+    async ({ data: { address }, source: nodeId }, res) => {
       // Healthcheck registering service
       const [healthErr] = await to(
         sendPackage(
           microHomeMessage(
             createPayload({
               source: service.source,
-              type: 'µHome.healthcheck',
+              type: 'µHome.core.healthcheck',
             }),
           ),
-          address,
+          { address },
         ),
       );
 
@@ -107,21 +109,30 @@ export const initServiceRegistry = ({
 
       res.send(`Successfully registered microservice '${nodeId}'`, { address });
 
-      service.internalEventBroker.emit('µHome.updateBroker');
+      service.internalEventBroker.emit('µHome.core.updateBroker');
     },
   );
 
-  addEventHandler(service, 'µHome.updateBroker', () => {
-    sendPackage(
-      microHomeMessage(
-        createPayload({ ...service, type: 'µHome.nodes', data: { nodes: [] } }),
-        1,
-        2,
-        registryLogger,
-      ),
-      eventBrokerAddress,
-    );
-  });
+  addEventHandler(service, 'µHome.core.updateBroker', async () =>
+    (([err, nodes]) =>
+      err
+        ? registryLogger.error('Failed to update nodes to broker', { err })
+        : sendPackage(
+            microHomeMessage(
+              createPayload({
+                ...service,
+                type: 'µHome.core.nodes',
+                data: {
+                  nodes,
+                },
+              }),
+              1,
+              2,
+              registryLogger,
+            ),
+            { address: eventBrokerAddress },
+          ))(await to(find())),
+  );
 
   return {
     ...service,

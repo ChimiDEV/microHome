@@ -114,8 +114,8 @@ export const initService = async (
   const serviceLogger = log.child({ service: nodeId });
   const baseService = initBaseService(port, nodeId, serviceLogger, version);
 
-  // Add standard event handler
-  addEventHandler(baseService, 'µHome.healthcheck', (p, res) =>
+  // Add standard event healthcheck handler
+  addEventHandler(baseService, 'µHome.core.healthcheck', (p, res) =>
     res.send('Service is healthy'),
   );
 
@@ -125,11 +125,11 @@ export const initService = async (
       microHomeMessage(
         createPayload({
           source: nodeId,
-          type: 'µHome.register',
+          type: 'µHome.core.register',
           data: { nodeId, address: getLocalIp(port) },
         }),
       ),
-      serviceRegistryAddress,
+      { address: serviceRegistryAddress },
     ),
   );
 
@@ -142,5 +142,29 @@ export const initService = async (
   return {
     ...baseService,
     nodeId,
+    subscribe: async (eventType, handler) => {
+      const [subscribeErr] = await to(
+        sendPackage(
+          microHomeMessage(
+            createPayload({
+              source: nodeId,
+              type: 'µHome.core.subscribe',
+              data: { subscribe: eventType },
+            }),
+          ),
+          { address: eventBrokerAddress },
+        ),
+      );
+
+      if (subscribeErr) {
+        serviceLogger.error(`Failed to subscribe to event '${eventType}'`, {
+          reason: subscribeErr.message,
+        });
+        return;
+      }
+
+      serviceLogger.info(`Successful subscribe to event '${eventType}'`);
+      addEventHandler(baseService, eventType, handler);
+    },
   };
 };

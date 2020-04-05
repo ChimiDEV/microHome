@@ -7,7 +7,7 @@ import winston, { format, transports } from 'winston';
 const executionTime = new Date().toISOString().substring(0, 10);
 
 const logger = winston.createLogger({
-  level: process.LOG_LEVEL || 'debug',
+  level: process.env.LOG_LEVEL || 'debug',
   format: format.combine(format.timestamp(), format.json()),
   transports: [
     new transports.File({
