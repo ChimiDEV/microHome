@@ -2,13 +2,15 @@
 // https://jestjs.io/docs/en/configuration.html
 
 module.exports = {
-  coverageDirectory: 'coverage',
-  coverageReporters: ['text'],
-  collectCoverageFrom: [
-    './src/**/*.{js,jsx}',
-    '!**/node_modules/**',
-    '!**/vendor/**',
-  ],
-  // The root directory that Jest should scan for tests and modules within
+  globals: {
+    'ts-jest': {
+      tsconfig: 'tsconfig.json',
+    },
+  },
+  moduleFileExtensions: ['ts', 'js'],
+  transform: {
+    '^.+\\.(ts|tsx)$': 'ts-jest',
+  },
   rootDir: 'test',
+  testEnvironment: 'node',
 };
